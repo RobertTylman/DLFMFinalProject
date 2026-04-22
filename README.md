@@ -78,7 +78,7 @@ To measure performance, we apply a series of **Audio Transformations** to the qu
 ### Prerequisites
 *   Python 3.9+
 *   `librosa`, `scipy`, `numpy` (DSP)
-*   `torch`, `transformers` (Embeddings)
+*   `laion_clap`,`torch`, `transformers` (Embeddings)
 *   `weaviate` or `faiss` (Vector Search)
 
 ### Installation
@@ -91,6 +91,17 @@ pip install -r requirements.txt
 ### Usage
 *(Usage instructions will be updated as the implementation progresses)*
 
+Download the CLAP checkpoints and update the hardcoded `ckpt_path`, `input_root`, and `output_root` values in each script before running.
+
+Checkpoint downloads:
+- General checkpoint: `630k-audioset-best.pt` from `https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt`
+- Music checkpoint: `music_audioset_epoch_15_esc_90.14.pt` from `[https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt](https://huggingface.co/lukewys/laion_clap/resolve/main/music_audioset_epoch_15_esc_90.14.pt)`
+
+In `Models/CLAP_general.py`, set:
+```python
+input_root = Path("/path/to/dataset")
+output_root = Path("/path/to/output_embeddings")
+ckpt_path = Path("/path/to/630k-audioset-best.pt")
 ---
 
 ## 🛠 Roadmap
