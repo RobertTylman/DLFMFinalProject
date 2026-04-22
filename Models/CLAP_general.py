@@ -7,11 +7,11 @@ import laion_clap
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"}
 
 # ===== HARDCODE YOUR PATHS HERE =====
-input_root = Path("/Users/katelynvieni/Downloads/GTZAN Dataset")
-output_root = Path("/Users/katelynvieni/Downloads/GTZAN_embeddings")
+input_root = Path("/Path/to/Dataset")
+output_root = Path("/Path/to/Embeddings")
 
 # Optional: set to a checkpoint path, or None to use default
-ckpt_path = None
+ckpt_path = Path("/Path/to/630k-audioset-best.pt")
 use_fusion = False
 batch_size = 8
 # ===================================
