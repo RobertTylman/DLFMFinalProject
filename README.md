@@ -94,8 +94,8 @@ pip install -r requirements.txt
 Download the CLAP checkpoints and update the hardcoded `ckpt_path`, `input_root`, and `output_root` values in each script before running.
 
 Checkpoint downloads:
-- General checkpoint: `630k-audioset-best.pt` from `https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt`
-- Music checkpoint: `music_audioset_epoch_15_esc_90.14.pt` from `[https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt](https://huggingface.co/lukewys/laion_clap/resolve/main/music_audioset_epoch_15_esc_90.14.pt)`
+- General checkpoint: [`630k-audioset-best.pt`](https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt)
+- Music checkpoint: [`music_audioset_epoch_15_esc_90.14.pt`](https://huggingface.co/lukewys/laion_clap/resolve/main/music_audioset_epoch_15_esc_90.14.pt)
 
 In `Models/CLAP_general.py`, set:
 ```python
