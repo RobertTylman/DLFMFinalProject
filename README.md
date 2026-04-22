@@ -91,6 +91,7 @@ pip install -r requirements.txt
 ### Usage
 *(Usage instructions will be updated as the implementation progresses)*
 
+#### LAION-CLAP Embeddings
 Download the CLAP checkpoints and update the hardcoded `ckpt_path`, `input_root`, and `output_root` values in each script before running.
 
 Checkpoint downloads:
@@ -102,7 +103,7 @@ In `Models/CLAP_general.py`, set:
 input_root = Path("/path/to/dataset")
 output_root = Path("/path/to/output_embeddings")
 ckpt_path = Path("/path/to/630k-audioset-best.pt")
----
+```
 
 ## 🛠 Roadmap
 - [ ] Implement Shazam Constellation Mapping.
