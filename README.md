@@ -71,6 +71,89 @@ To measure performance, we apply a series of **Audio Transformations** to the qu
 
 ---
 
+## 🎯 Shazam Robustness Evaluation Pipeline
+
+This pipeline measures how well the Shazam-style fingerprinter (in `Shazam/`) recovers the correct GTZAN original when only an augmented (noised) version of the track is available as a query. It lives in `Shazam/evaluation/` and consists of two scripts plus a results CSV.
+
+### Pipeline overview
+
+```mermaid
+flowchart LR
+    A[GTZAN originals<br/>genres_original/] --> B[build_gtzan_db.py<br/>index_folder]
+    B --> C[(fingerprints_gtzan.db)]
+    D[Augmented GTZAN<br/>genres_augmented/<br/>noise/SNR/genre/file.wav] --> E[evaluate_shazam.py]
+    E -- random 10s snippet --> F[identify_audio]
+    C --> F
+    F --> G[shazam_eval.csv<br/>identified · correct · elapsed_s]
+```
+
+### Step 1 — Build the reference fingerprint database
+
+`Shazam/evaluation/build_gtzan_db.py` calls the existing `index_folder()` to fingerprint every file in `genres_original/` into a dedicated `fingerprints_gtzan.db`. A separate DB (rather than reusing `Shazam/fingerprints.db`) keeps the reference catalog limited to exactly the 999 GTZAN originals (`jazz.00054.wav` is corrupt and silently skipped), so any retrieval is unambiguously a hit or miss against the ground-truth set.
+
+```bash
+python3 Shazam/evaluation/build_gtzan_db.py \
+    --originals-root "/Volumes/Robbie SSD/GTZAN Dataset/Data/genres_original"
+```
+
+### Step 2 — Discover augmented files and derive ground truth
+
+`evaluate_shazam.py` walks `genres_augmented/` and parses each path as `{noise_type}/{snr}dB/{genre}/{filename}`. Because the augmenter preserves the original filename, the ground-truth name is just the augmented filename itself — a match is correct iff `identify_audio()`'s top-ranked song name equals that filename.
+
+### Step 3 — Reproducible random snippet selection
+
+Real Shazam matches against ~10 s captures, not whole tracks, so the evaluator extracts a 10 s window from each 30 s augmented clip rather than passing the full file. The randomization is designed so that **noise — not snippet position — is the only varied factor across conditions for a given underlying track**:
+
+- A per-file seed is derived as `SHA-256("{master_seed}|{filename}")[:16]` (first 64 bits, big-endian) and fed to `random.Random`.
+- The seed depends only on the filename (e.g. `blues.00001.wav`) and a global `--master-seed` (default `20260425`). It does **not** depend on `noise_type` or `snr`.
+- Result: every condition (`white_noise/20dB`, `crowd_noise/0dB`, …) for `blues.00001.wav` extracts the same start offset within the clip. Differences in identification outcome can therefore be attributed to the noise treatment rather than to a luckier or unluckier window.
+- Start offset is `rng.uniform(0, max(0, total_seconds - snippet_seconds))`, so the window always lies fully inside the clip.
+- Changing `--master-seed` re-randomizes every window globally without breaking within-track consistency, useful for sanity-checking results.
+
+The selected window is written to a temporary 16-bit PCM WAV and deleted after `identify_audio()` returns.
+
+### Step 4 — Identify and time
+
+For each snippet, the evaluator wraps the call in `time.perf_counter()`:
+
+```python
+t0 = time.perf_counter()
+result = identify_audio(snippet_path, db_path=fingerprints_gtzan.db)
+elapsed_s = time.perf_counter() - t0
+```
+
+`identify_audio()` returns either `None` (no match passed the confidence thresholds in `Shazam/.env` / `src/identify.py`) or a dict with the top-ranked song and scoring metadata. The timing covers the full identification path: snippet fingerprinting, DB hash lookup, and time-coherence scoring.
+
+### Step 5 — Record results
+
+One row per augmented file is appended to `Shazam/evaluation/results/shazam_eval.csv`:
+
+| Column | Meaning |
+| :--- | :--- |
+| `noise_type`, `snr_db`, `genre`, `filename` | Condition + source identification |
+| `ground_truth_name` | Expected match (= `filename`) |
+| `snippet_start_s`, `snippet_seconds` | Window used for the query |
+| `identified` | `yes`/`no` — did `identify_audio` return a match at all |
+| `correct` | `yes`/`no` — did the returned name equal the ground truth |
+| `elapsed_s` | Wall-clock time for the identification call |
+| `top_match_name`, `score`, `confidence`, `query_fingerprints` | Diagnostics from the matcher |
+
+The script is **resume-safe**: on each run it reads the existing CSV, skips any `(noise_type, snr_db, genre, filename)` already present, and appends only new rows. Killing and restarting it is therefore safe.
+
+### Running the evaluation
+
+```bash
+# Smoke test on a handful of files first
+python3 Shazam/evaluation/evaluate_shazam.py --limit 10
+
+# Full sweep (≈8,991 files: 999 tracks × 3 noise types × 3 SNR levels)
+python3 Shazam/evaluation/evaluate_shazam.py
+```
+
+Useful flags: `--snippet-seconds` (default `10.0`), `--master-seed` (default `20260425`), `--augmented-root`, `--db`, `--out`.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
