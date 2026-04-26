@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Evaluate Shazam-style identification against augmented GTZAN.
 
+Default mode walks `{augmented_root}/{noise_type}/{snr}dB/{genre}/{name}.wav`.
+Pass `--clean-baseline` to instead walk `{originals_root}/{genre}/{name}.wav`,
+which establishes the no-noise reference accuracy. Clean-baseline rows are
+written with `noise_type="clean"` and `snr_db=999`, and use the same
+per-filename snippet-start seed as augmented runs so windows align across
+all conditions for the same track.
+
 For every augmented file `{augmented_root}/{noise_type}/{snr}dB/{genre}/{name}.wav`:
   1. Pick a deterministic random 10s window inside the 30s clip.
      The window position is seeded from the source filename only, so the
@@ -40,10 +47,17 @@ from src.identify import identify_audio
 
 
 DEFAULT_AUGMENTED = "/Volumes/Robbie SSD/GTZAN Dataset/Data/genres_augmented"
+DEFAULT_ORIGINALS = "/Volumes/Robbie SSD/GTZAN Dataset/Data/genres_original"
 DEFAULT_DB = str(Path(__file__).resolve().parent / "fingerprints_gtzan.db")
 DEFAULT_OUT = str(Path(__file__).resolve().parent / "results" / "shazam_eval.csv")
 DEFAULT_SNIPPET_SECONDS = 10.0
 DEFAULT_MASTER_SEED = 20260425
+
+# Sentinel values used when running the clean baseline (no augmentation).
+# snr_db = 999 sorts cleanly to one end of plots; noise_type = "clean" reads
+# naturally in the CSV and notebook.
+CLEAN_NOISE_TYPE = "clean"
+CLEAN_SNR_SENTINEL = 999
 
 FIELDNAMES = [
     "noise_type",
@@ -108,14 +122,31 @@ def parse_augmented_path(path: str, augmented_root: str):
     return noise_type, snr, genre, filename
 
 
-def collect_augmented_files(augmented_root: str):
+def parse_original_path(path: str, originals_root: str):
+    """Expect `{originals_root}/{genre}/{filename}` — one level shallower
+    than the augmented layout. Returns the same 4-tuple shape as
+    parse_augmented_path, with sentinel noise_type/snr values so downstream
+    code can stay uniform."""
+    rel = os.path.relpath(path, originals_root)
+    parts = rel.split(os.sep)
+    if len(parts) != 2:
+        return None
+    genre, filename = parts
+    return CLEAN_NOISE_TYPE, CLEAN_SNR_SENTINEL, genre, filename
+
+
+def collect_wavs(root: str):
     files = []
-    for root, _, fnames in os.walk(augmented_root):
+    for dirpath, _, fnames in os.walk(root):
         for f in fnames:
             if f.lower().endswith(".wav"):
-                files.append(os.path.join(root, f))
+                files.append(os.path.join(dirpath, f))
     files.sort()
     return files
+
+
+# Back-compat alias — earlier code/imports may still reference this name.
+collect_augmented_files = collect_wavs
 
 
 def load_already_done(csv_path: str):
@@ -137,6 +168,15 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--augmented-root", default=DEFAULT_AUGMENTED)
+    p.add_argument("--originals-root", default=DEFAULT_ORIGINALS,
+                   help="Used only with --clean-baseline.")
+    p.add_argument("--clean-baseline", action="store_true",
+                   help="Evaluate against the clean originals instead of the "
+                        "augmented set. Rows are written with noise_type='clean' "
+                        f"and snr_db={CLEAN_SNR_SENTINEL}. Snippet-start seeding "
+                        "uses the same per-filename hash as augmented runs, so "
+                        "each track's clean snippet aligns with its augmented "
+                        "counterparts in the same CSV.")
     p.add_argument("--db", default=DEFAULT_DB,
                    help="Fingerprint DB built by build_gtzan_db.py")
     p.add_argument("--out", default=DEFAULT_OUT,
@@ -147,22 +187,30 @@ def main():
                    help="Process at most N files (debug / smoke test)")
     args = p.parse_args()
 
-    if not os.path.isdir(args.augmented_root):
-        sys.exit(f"Not a directory: {args.augmented_root}")
+    # Pick mode-specific root + path parser.
+    if args.clean_baseline:
+        scan_root = args.originals_root
+        parse_path = lambda f: parse_original_path(f, scan_root)
+    else:
+        scan_root = args.augmented_root
+        parse_path = lambda f: parse_augmented_path(f, scan_root)
+
+    if not os.path.isdir(scan_root):
+        sys.exit(f"Not a directory: {scan_root}")
     if not os.path.exists(args.db):
         sys.exit(f"Fingerprint DB missing: {args.db}\n"
                  f"Run build_gtzan_db.py first.")
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
 
-    files = collect_augmented_files(args.augmented_root)
+    files = collect_wavs(scan_root)
     if args.limit is not None:
         files = files[: args.limit]
 
     seen = load_already_done(args.out)
     pending = []
     for f in files:
-        parsed = parse_augmented_path(f, args.augmented_root)
+        parsed = parse_path(f)
         if parsed is None or parsed in seen:
             continue
         pending.append(f)
@@ -185,8 +233,9 @@ def main():
         for idx, filepath in enumerate(pending, 1):
             # --- Step 1: parse condition + ground truth from the path ---
             # GTZAN preserves filenames through augmentation, so the augmented
-            # filename IS the ground-truth original name.
-            parsed = parse_augmented_path(filepath, args.augmented_root)
+            # filename IS the ground-truth original name. In --clean-baseline
+            # mode noise_type is "clean" and snr is CLEAN_SNR_SENTINEL.
+            parsed = parse_path(filepath)
             if parsed is None:
                 continue
             noise_type, snr, genre, filename = parsed
