@@ -12,6 +12,9 @@ While Shazam's landmark-based hashing was once the gold standard for music ident
 
 This repository implements both approaches and benchmarks them against a common dataset under various stress conditions.
 
+### Data 
+Talk about data we used and augmentation techniques 
+
 ### Retrieval Methodologies
 1.  **Shazam-Style Fingerprinting**:
     *   Generation of **Constellation Maps** from spectrogram peaks.
@@ -21,7 +24,14 @@ This repository implements both approaches and benchmarks them against a common 
     *   Uses both general checkpoint and music-specific checkpoint
     *   Contrastive Language-Audio Pretraining (CLAP) for broad acoustic feature extraction.
     *   Vector similarity search (Cosine Similarity).
-    
+
+### Group Roles 
+Barney: Data Augmentation and MIR Data Scientist 
+Robert Tylman: Data Augmentation and Shazam Implementation
+Katelyn Vieni: CLAP Embedding Engineer (general)
+Jonathan David: CLAP Embedding Engineer (music)
+Drew Atz: Evaluation Specialist 
+
 ---
 
 ## 🏗 System Architecture
