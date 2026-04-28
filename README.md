@@ -26,7 +26,7 @@ Talk about data we used and augmentation techniques
     *   Vector similarity search (Cosine Similarity).
 
 ### Group Roles 
-* Barney: Data Augmentation and MIR Data Scientist 
+* Barney Pinkerton: Data Augmentation and MIR Data Scientist 
 * Robert Tylman: Data Augmentation and Shazam Implementation
 * Katelyn Vieni: CLAP Embedding Engineer (general)
 * Jonathan David: CLAP Embedding Engineer (music)
