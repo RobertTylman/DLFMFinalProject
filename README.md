@@ -13,7 +13,13 @@ While Shazam's landmark-based hashing was once the gold standard for music ident
 This repository implements both approaches and benchmarks them against a common dataset under various stress conditions.
 
 ### Data 
-Talk about data we used and augmentation techniques 
+1. GTZAN Dataset
+* 10 genres, 100 files each, 30 sec. long
+
+2. Added augmentations at 0dB, 10dB, and 20dB (one augmented version per transformation per track)
+* White Noise
+* Crowd Noise
+* Street Noise 
 
 ### Retrieval Methodologies
 1.  **Shazam-Style Fingerprinting**:
