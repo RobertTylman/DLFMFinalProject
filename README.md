@@ -52,24 +52,54 @@ The evaluation framework benchmarks the systems using the following metrics:
 
 ```mermaid
 graph TD
-    A[Original Audio] --> B[Processing Pipeline]
-    
-    subgraph "Retrieval Methods"
-        B --> C[Shazam Implementation]
-        B --> D[CLAP Embedding]
-        B --> E[Music-Specific Embedding]
+    subgraph "Phase 1: Database Indexing (Clean Reference)"
+        GTZAN_Ref[GTZAN Original Tracks<br/>30s Clean]
+        
+        GTZAN_Ref --> Shazam_Idx[Shazam Fingerprinting<br/>Spectrogram + Peaks]
+        Shazam_Idx --> HashDB[(fingerprints.db)]
+        
+        GTZAN_Ref --> CLAP_Gen_Idx[LAION-CLAP General]
+        GTZAN_Ref --> CLAP_Mus_Idx[LAION-CLAP Music]
+        CLAP_Gen_Idx --> EmbedStore[(Embedding Manifest<br/>.npy files)]
+        CLAP_Mus_Idx --> EmbedStore
     end
-    
-    C --> F[Constellation Maps / Hashes]
-    D --> G[Dense Vector Representation]
-    E --> H[Music Feature Vectors]
-    
-    F --> I[Retrieval Result]
-    G --> I
-    H --> I
-    
-    I --> J[Accuracy Evaluation]
+
+    subgraph "Phase 2: Data Augmentation (Test Queries)"
+        GTZAN_Query[GTZAN Original Tracks]
+        GTZAN_Query --> AugEngine[Augmentation Engine]
+        
+        Noise[(Noise: White, Crowd, Street)] --> AugEngine
+        SNR[(SNR: 0dB, 10dB, 20dB)] --> AugEngine
+        
+        AugEngine --> NoisyAudio[Augmented Audio Set<br/>8,991 files]
+        NoisyAudio --> Snippets[Random 10s Snippets]
+    end
+
+    subgraph "Phase 3: Retrieval & Benchmarking"
+        Snippets --> ShazamMatch[Shazam Time-Coherence<br/>Matching]
+        Snippets --> VectorSearch[Cosine Similarity<br/>Search]
+        
+        HashDB --> ShazamMatch
+        EmbedStore --> VectorSearch
+        
+        ShazamMatch --> ResA[Retrieval Results]
+        VectorSearch --> ResB[Retrieval Results]
+    end
+
+    subgraph "Phase 4: Evaluation"
+        ResA --> Metrics[Accuracy / MRR / SNR Threshold]
+        ResB --> Metrics
+        Metrics --> Reports[shazam_eval.csv + Comparison]
+    end
+
+    %% Styling
+    style GTZAN_Ref fill:#e1f5fe,stroke:#01579b
+    style HashDB fill:#fff9c4,stroke:#fbc02d
+    style EmbedStore fill:#fff9c4,stroke:#fbc02d
+    style NoisyAudio fill:#ffebee,stroke:#c62828
+    style Metrics fill:#f1f8e9,stroke:#33691e
 ```
+
 
 ## 🚀 Getting Started
 
