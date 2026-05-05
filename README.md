@@ -26,6 +26,7 @@ The repository is organized into specialized modules for each stage of the pipel
     *   `evaluation/`: Scripts (`evaluate_shazam.py`) for automated benchmarking against the augmented dataset.
     *   `results/`: Storage for evaluation metrics and CSV logs (`shazam_eval.csv`).
 *   **`Models/`**: Scripts for extracting and searching neural embeddings using LAION-CLAP (general and music-specific checkpoints).
+*   **`Embedding Evaluations/`**: Performance benchmarking scripts, visual results, and analysis of performance trends for CLAP embeddings.
 *   **`notes.md`**: Technical logs regarding snippet randomization, bias mitigation, and implementation details.
 
 ## 👥 Group Roles
