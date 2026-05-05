@@ -1,4 +1,4 @@
-# Shazam CLAP Embedding Analysis
+# CLAP Embedding Analysis
 
 This repository evaluates how well two CLAP embedding checkpoints preserve music identity and genre under noisy GTZAN audio augmentations.
 
