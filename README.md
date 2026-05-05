@@ -28,17 +28,6 @@ The repository is organized into specialized modules for each stage of the pipel
 *   **`Models/`**: Scripts for extracting and searching neural embeddings using LAION-CLAP (general and music-specific checkpoints).
 *   **`notes.md`**: Technical logs regarding snippet randomization, bias mitigation, and implementation details.
 
-## 📈 Results and Key Findings
-The evaluation framework benchmarks the systems using the following metrics:
-*   **Top-1 Accuracy**: Success rate of the correct song being the highest-ranked result.
-*   **Mean Reciprocal Rank (MRR)**: Measures the quality of the ranking for the ground truth.
-*   **Noise Tolerance Threshold**: The lower-bound SNR at which each method maintains >80% accuracy.
-
-### Key Observations:
-*   **Deterministic Resilience**: The Shazam implementation demonstrates high robustness in "additive noise" scenarios due to its time-coherence scoring, which can recover signals even when the majority of fingerprint peaks are lost to noise.
-*   **Semantic Robustness**: Neural embeddings (CLAP) provide higher flexibility for semantic similarity but can be more sensitive to specific spectral distortions if those distortions were not present in the training distribution.
-*   **Pipeline Performance**: The evaluation identifies that 10-second snippets are sufficient for high-confidence identification in most 20dB and 10dB conditions, while 0dB poses a significant challenge for both methodologies.
-
 ## 👥 Group Roles
 1.  **Barney Pinkerton**: Data Augmentation and MIR Data Scientist
 2.  **Robert Tylman**: Data Augmentation and Shazam Implementation
@@ -123,6 +112,20 @@ python3 Shazam/evaluation/build_gtzan_db.py --originals-root "/path/to/GTZAN/gen
 # Run the benchmark
 python3 Shazam/evaluation/evaluate_shazam.py
 ```
+
+## 📈 Results and Key Findings
+
+The evaluation framework benchmarks the systems using the following metrics:
+
+* **Top-1 Accuracy:** Success rate of the correct song being the highest-ranked result.
+* **Mean Reciprocal Rank (MRR):** Measures the ranking quality of the ground-truth match.
+* **Noise Tolerance Threshold:** The lowest SNR at which each method maintains strong identification accuracy.
+
+### Key Observations:
+
+* **Deterministic Resilience:** The Shazam-style fingerprinting implementation demonstrates strong robustness in additive-noise scenarios, maintaining high identification accuracy across 20 dB, 10 dB, and 0 dB SNR conditions.
+* **Semantic Robustness:** CLAP embeddings provide more flexibility for semantic similarity and genre-level structure, but are more sensitive to noise and specific spectral distortions than the fingerprinting system.
+* **Pipeline Performance:** 10-second snippets were sufficient for high-confidence fingerprint-based identification across most noise conditions, while CLAP-based retrieval showed clearer performance degradation as noise increased.
 
 ## 📚 References
 *   Wang, A. (2003). *An Industrial-Strength Audio Search Algorithm*.
